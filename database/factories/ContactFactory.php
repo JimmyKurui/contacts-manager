@@ -20,6 +20,7 @@ class ContactFactory extends Factory
      */
     public function definition(): array
     {
+        $dob = $this->faker->optional(0.4)->dateTimeBetween('-80 years', '-18 years');
         return [
             'user_id' => User::factory(),
             'first_name' => $this->faker->firstName(),
@@ -33,7 +34,7 @@ class ContactFactory extends Factory
             'state' => $this->faker->optional(0.6)->state(),
             'country' => $this->faker->optional(0.7)->country(),
             'postal_code' => $this->faker->optional(0.5)->postcode(),
-            'date_of_birth' => $this->faker->optional(0.4)->dateTimeBetween('-80 years', '-18 years')->format('Y-m-d'),
+            'date_of_birth' => $dob ? $dob->format('Y-m-d') : null,
             'notes' => $this->faker->optional(0.3)->paragraph(),
             'is_favorite' => $this->faker->boolean(20),
         ];
