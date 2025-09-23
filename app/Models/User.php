@@ -4,6 +4,7 @@ namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 
@@ -46,9 +47,10 @@ class User extends Authenticatable
         ];
     }
 
-    public function contact(): BelongsTo
+
+    public function contacts(): HasMany
     {
-        return $this->belongsTo(Contact::class);
+        return $this->hasMany(Contact::class);
     }
 
     public function groups(): HasMany
@@ -61,4 +63,14 @@ class User extends Authenticatable
         return $this->hasMany(Interaction::class)
             ->orderBy('ended_at', 'desc');
     }
+
+    // ========================= EVENTS ===========================
+    protected static function booted(): void
+    {
+        static::creating(function (User $user) {
+            $user->groups()->insert(Group::starterGroups($user->id));
+        });
+    }
+
+
 }

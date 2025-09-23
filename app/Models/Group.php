@@ -2,12 +2,27 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 class Group extends Model
 {
     use HasFactory, SoftDeletes;
 
+    protected $fillable = [
+        'user_id',
+        'name',
+        'description',
+        'color',
+        'is_default',
+    ];
+
+    protected $with = ['contacts', 'user'];
+
+    // =================== RELATIONSHIPS ==============
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
@@ -21,34 +36,20 @@ class Group extends Model
             ->using(ContactGroup::class);
     }
 
-    public function hasContact(Contact $contact): bool
+    // ================== UTILS ====================
+    public static function starterGroups(int $userId): array
     {
-        return $this->contacts()->where('contacts.id', $contact->id)->exists();
-    }
-
-    public function addContacts(array $contactIds, ?int $assignedBy = null): void
-    {
-        $pivotData = [];
-        foreach ($contactIds as $contactId) {
-            $pivotData[$contactId] = [
-                'assigned_at' => now(),
-                'assigned_by' => $assignedBy ?? $this->user_id,
-            ];
-        }
-        
-        $this->contacts()->syncWithoutDetaching($pivotData);
-    }
-
-    public function removeContacts(array $contactIds): void
-    {
-        $this->contacts()->detach($contactIds);
+        $groups = config('starterContactGroups');
+        return array_map(function ($group) use ($userId) {
+            return array_merge($group, ['user_id' => $userId]);
+        }, $groups);
     }
 
     // ========================= EVENTS =================
     protected static function booted(): void
     {
         // Only one default group per user
-        static::saving(function (ContactGroup $group) {
+        static::saving(function (Group $group) {
             if ($group->is_default) {
                 static::where('user_id', $group->user_id)
                     ->where('id', '!=', $group->id)
