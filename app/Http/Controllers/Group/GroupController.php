@@ -8,6 +8,7 @@ use App\Http\Requests\Group\GroupStoreRequest;
 use App\Http\Requests\Group\GroupUpdateRequest;
 use App\Traits\ErrorResponseTrait;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -18,13 +19,23 @@ class GroupController extends Controller
 {
     use ErrorResponseTrait;
 
-    public function __construct(private GroupService $groupService) {}
+    protected const CACHE_KEY = 'groups_user:';
+
+    public function __construct(private GroupService $groupService) {
+        $this->groupsCacheKey = self::CACHE_KEY . auth()->id();
+    }
+
+    public static function getGroupsCacheKey(): string {
+        return self::CACHE_KEY . auth()->id();
+    }
     /**
      * Display a listing of the resource.
      */
     public function index(Request $request): Response
     {
-        $groups = $this->groupService->getGroupsForUser($request->user()->id);
+        $groups = Cache::remember($this->groupsCacheKey, now()->addMinutes(60), function () {
+            return $this->groupService->getGroupsForUser(auth()->id());
+        });
         return Inertia::render('Groups/Index', [
             'groups' => $groups->toResourceCollection(),
         ]);
@@ -50,6 +61,7 @@ class GroupController extends Controller
             $data['user_id'] = auth()->id();
             $group = $this->groupService->createGroup($data);
             DB::commit();
+            Cache::forget($this->groupsCacheKey);
             return response()->json([
                 'message' => 'Group created successfully',
                 'group' => $group->toResource()
@@ -93,6 +105,7 @@ class GroupController extends Controller
             DB::beginTransaction();
             $group = $this->groupService->updateGroup($id, $request->validated());
             DB::commit();
+            Cache::forget($this->groupsCacheKey);
             return response()->json([
                 'message' => 'Group updated successfully',
                 'group' => $group->toResource()
@@ -109,9 +122,10 @@ class GroupController extends Controller
     public function destroy($id)
     {
         try {
-            DB::beginTransaction();
-            $deleted = $this->groupService->deleteGroup($id);
             DB::commit();
+            $this->groupService->deleteGroup($id);       
+            DB::commit();
+            Cache::forget($this->groupsCacheKey);
             return response()->json(['message' => 'Group deleted successfully']);
         } catch (\Exception $e) {
             DB::rollBack();

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Contact;
 
 use App\Http\Controllers\Controller;
+use App\Http\Controllers\Group\GroupController;
 use App\Http\Requests\StoreContactRequest;
 use App\Http\Requests\UpdateContactRequest;
 use App\Models\Contact;
@@ -11,6 +12,7 @@ use App\Services\GroupService;
 use App\Traits\ErrorResponseTrait;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -19,9 +21,16 @@ class ContactController extends Controller
 {
     use ErrorResponseTrait;
 
+    private const CACHE_TAG = 'contacts_user:';
+    
     public function __construct(protected ContactService $contactService, protected GroupService $groupService)
     {
         // $this->authorizeResource(Contact::class, 'contact');
+        $this->contactsCacheTag = self::CACHE_TAG . auth()->id();
+    }
+
+    public static function getContactsCacheTag(): string {
+        return self::CACHE_TAG . auth()->id();
     }
 
     /**
@@ -36,12 +45,20 @@ class ContactController extends Controller
             'direction' => 'nullable|in:asc,desc',
             'per_page' => 'nullable|integer|min:10|max:100',
         ]);
-        $contacts = $this->contactService->getContacts(
-            auth()->id(),
-            $filters,
-            $filters['per_page'] ?? null
-        );
-        $groups = $this->groupService->getGroupsForUser(auth()->id());
+        $contactsCacheKey = $this->contactsCacheTag . ':filters:' . md5(json_encode($filters));
+        $contacts = Cache::tags([$this->contactsCacheTag])->remember($contactsCacheKey, now()->addMinutes(5), function () use ($filters) {
+            return $this->contactService->getContacts(
+                auth()->id(),
+                $filters,
+                $filters['per_page'] ?? null
+            );
+        });
+
+        $groupsCacheKey = GroupController::getGroupsCacheKey();
+        $groups = Cache::remember($groupsCacheKey, now()->addMinutes(5), function () {
+            return $this->groupService->getGroupsForUser(auth()->id());
+        });
+
         return Inertia::render('Contacts/Index', [
             'contacts' => $contacts,
             'groups' => $groups->toResourceCollection(),
@@ -70,6 +87,7 @@ class ContactController extends Controller
             $data['user_id'] ??= auth()->id();
             $contact = $this->contactService->createContact($data);
             DB::commit();
+            Cache::tags([$this->contactsCacheTag])->flush();
             return response()->json([
                 'message' => 'Contact created successfully',
                 'contact' => $contact->toResource()
@@ -110,6 +128,7 @@ class ContactController extends Controller
             DB::beginTransaction();
             $updatedContact = $this->contactService->updateContact($contact->id, $request->validated());
             DB::commit();
+            Cache::tags([$this->contactsCacheTag])->flush();
             return response()->json([
                 'message' => 'Contact updated successfully', 
                 'contact' => $updatedContact->toResource()
@@ -129,6 +148,7 @@ class ContactController extends Controller
             DB::beginTransaction();
             $this->contactService->deleteContact($contact->id);
             DB::commit();
+            Cache::tags([$this->contactsCacheTag])->flush();
             return response()->json(['message' => 'Contact deleted successfully'], 200);
         } catch (\Exception $e) {
             DB::rollBack();
