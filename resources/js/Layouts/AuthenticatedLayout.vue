@@ -45,6 +45,12 @@ const showingNavigationDropdown = ref(false);
                                 >
                                     Contacts
                                 </NavLink>
+                                <NavLink
+                                    :href="route('groups.index')"
+                                    :active="route().current('groups.index')"
+                                >
+                                    Groups
+                                </NavLink>
                             </div>
                         </div>
 
