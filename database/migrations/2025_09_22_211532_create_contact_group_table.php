@@ -17,6 +17,7 @@ return new class extends Migration
             $table->foreignId('group_id')->constrained()->onDelete('cascade');
             $table->timestamp('assigned_at')->useCurrent();
             $table->foreignId('assigned_by')->nullable()->constrained('users')->onDelete('set null');
+            $table->timestamps();
             
             $table->unique(['contact_id', 'group_id'], 'unique_contact_group');
             $table->index(['contact_id']);

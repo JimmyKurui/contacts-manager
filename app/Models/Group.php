@@ -30,19 +30,23 @@ class Group extends Model
 
     public function contacts(): BelongsToMany
     {
-        return $this->belongsToMany(Contact::class, 'contact_group', 'cgroup_id', 'contact_id')
+        return $this->belongsToMany(Contact::class, 'contact_group', 'group_id', 'contact_id')
             ->withPivot(['assigned_at', 'assigned_by'])
-            ->withTimestamps()
-            ->using(ContactGroup::class);
+            ->withTimestamps();
     }
 
     // ================== UTILS ====================
     public static function starterGroups(int $userId): array
     {
-        $groups = config('starterContactGroups');
+        $groups = config('constants.starterContactGroups');
         return array_map(function ($group) use ($userId) {
             return array_merge($group, ['user_id' => $userId]);
         }, $groups);
+    }
+    // ====================== SCOPES =====================
+    public function scopeByUser($query, int $userId)
+    {
+        return $query->where('user_id', $userId);
     }
 
     // ========================= EVENTS =================
@@ -58,7 +62,7 @@ class Group extends Model
         });
 
         // No deletion of default groups that have contacts
-        static::deleting(function (ContactGroup $group) {
+        static::deleting(function (Group $group) {
             if ($group->is_default && $group->contacts()->count() > 0) {
                 throw new \Exception('Cannot delete default group that contains contacts.');
             }

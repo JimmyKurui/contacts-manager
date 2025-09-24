@@ -67,8 +67,8 @@ class User extends Authenticatable
     // ========================= EVENTS ===========================
     protected static function booted(): void
     {
-        static::creating(function (User $user) {
-            $user->groups()->insert(Group::starterGroups($user->id));
+        static::created(function (User $user) {
+            $user->groups()->createMany(config('constants.starterContactGroups'));
         });
     }
 
