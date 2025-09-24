@@ -42,7 +42,7 @@ class StoreContactRequest extends FormRequest
             'birthday' => ['nullable', 'date', 'before:today'],
             'avatar' => ['nullable', 'image', 'max:2048', 'mimes:jpg,jpeg,png,gif'],
             'groups' => ['nullable', 'array'],
-            'groups.*' => ['integer', 'exists:groups,id'],
+            // 'groups.*' => ['integer', 'exists:groups,id'],
             'address' => ['nullable', 'string', 'max:255'],
         ];
     }

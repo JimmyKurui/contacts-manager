@@ -44,8 +44,10 @@ class GroupRepository implements GroupRepositoryInterface
     {
         try {
             $group = Group::findOrFail($groupId);
-            $group->update($data);
-            return $group;
+            if(!$group->update($data)) {
+                throw new Exception("No change after update operation for group");
+            } 
+            return $group->fresh();
         } catch (Exception $e) {
             Log::error('Failed to update group ' . $groupId . ': ' . $e->getMessage());
             throw $e;
@@ -56,11 +58,13 @@ class GroupRepository implements GroupRepositoryInterface
     {
         try {
             $group = Group::findOrFail($groupId);
-            $group->delete();
+            if (!$group->delete()) {
+                throw new Exception("No change after delete operation for group");
+            } 
             return true;
         } catch (Exception $e) {
             Log::error('Failed to delete group ' . $groupId . ': ' . $e->getMessage());
-            return false;
+            throw $e;
         }
     }
 
@@ -78,6 +82,7 @@ class GroupRepository implements GroupRepositoryInterface
             $group->contacts()->syncWithoutDetaching($pivotData);
         } catch (Exception $e) {
             Log::error('Failed to attach contacts to group ' . $groupId . ': ' . $e->getMessage());
+            throw $e;
         }
     }
 
@@ -88,6 +93,7 @@ class GroupRepository implements GroupRepositoryInterface
             $group->contacts()->detach($contactIds);
         } catch (Exception $e) {
             Log::error('Failed to detach contacts from group ' . $groupId . ': ' . $e->getMessage());
+            throw $e;
         }
     }
 }

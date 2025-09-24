@@ -25,13 +25,13 @@ class ContactService
     {
         $contact = $this->contactRepository->createContact($data);
         array_key_exists('group_ids', $data) && $data['group_ids'] && $this->contactRepository->attachGroups($contact->id, $data['group_ids']);
-        return $contact->fresh();
+        return $contact;
     }
 
     public function updateContact(int $contactId, array $data): Contact
     {
         $contact = $this->contactRepository->updateContact($contactId, $data);
-        $data['group_ids'] && $this->contactRepository->attachGroups($contact->id, $data['group_ids']);
+        $data['groups'] && $this->contactRepository->attachGroups($contact->id, collect($data['groups'])->pluck('id')->toArray());
         return $contact;
     }
 

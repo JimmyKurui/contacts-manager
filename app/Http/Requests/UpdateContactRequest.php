@@ -34,8 +34,8 @@ class UpdateContactRequest extends FormRequest
             'tags' => ['nullable', 'array', 'max:10'],
             'birthday' => ['nullable', 'date', 'before:today'],
             'avatar' => ['nullable', 'image', 'max:2048', 'mimes:jpg,jpeg,png,gif'],
-            // 'groups' => ['nullable', 'array'],
-            // 'groups.*' => ['integer', 'exists:groups,id'],
+            'groups' => ['nullable', 'array'],
+            // 'groups.*' => ['object', 'exists:groups,id'],
             'address' => ['nullable', 'string', 'max:255'],
         ];
     }
