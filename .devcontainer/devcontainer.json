@@ -1,0 +1,26 @@
+{
+    "image": "mcr.microsoft.com/vscode/devcontainers/php:8.2-bullseye",
+    "forwardPorts": [8000, 5173],
+    "portsAttributes": {
+    "8000": { "label": "Laravel Server" },
+    "5173": { "label": "Vue 3 Dev Server" }
+    },
+    "remoteEnv": {
+    "PATH": "${containerEnv:PATH}:~/.config/composer/vendor/bin"
+    },
+    "postCreateCommand": "cp .env.example .env && composer install && npm install && php artisan key:generate",
+    "postAttachCommand": {
+        "server": "gh codespace ports visibility 5173:public -c $CODESPACE_NAME && exit",
+        "vite": "bash .devcontainer/postBuild/vite.sh",
+        "laravel": "bash .devcontainer/postBuild/laravel.sh"
+    },
+    "customizations": {
+        "vscode": {
+            "extensions": [
+                "bmewburn.vscode-intelephense-client",
+                "esbenp.prettier-vscode",
+                "mikestead.dotenv"
+            ]
+        }
+    }
+}
