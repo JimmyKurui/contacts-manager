@@ -8,6 +8,7 @@ use App\Http\Requests\UpdateContactRequest;
 use App\Models\Contact;
 use App\Services\ContactService;
 use App\Services\GroupService;
+use App\Traits\ErrorResponseTrait;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\DB;
@@ -16,6 +17,8 @@ use Inertia\Response;
 
 class ContactController extends Controller
 {
+    use ErrorResponseTrait;
+
     public function __construct(protected ContactService $contactService, protected GroupService $groupService)
     {
         // $this->authorizeResource(Contact::class, 'contact');
@@ -74,11 +77,7 @@ class ContactController extends Controller
 
         } catch (\Exception $e) {
             DB::rollBack();
-
-            return response()->json([
-                'message' => 'Failed to create contact',
-                'error' => app()->environment('production') ? 'Server error' : $e->getMessage()
-            ], 422);
+            return $this->handleException($e, 'Failed to create contact', 422);
         }
     }
 
@@ -117,11 +116,7 @@ class ContactController extends Controller
             ], 200);
         } catch (\Exception $e) {
             DB::rollBack();
-
-            return response()->json([
-                'message' => 'Failed to update contact',
-                'error' => app()->environment('production') ? 'Server error' : $e->getMessage()
-            ], 422);
+            return $this->handleException($e, 'Failed to update contact', 422);
         }
     }
 
@@ -137,11 +132,7 @@ class ContactController extends Controller
             return response()->json(['message' => 'Contact deleted successfully'], 200);
         } catch (\Exception $e) {
             DB::rollBack();
-
-            return response()->json([
-                'message' => 'Failed to delete contact',
-                'error' => app()->environment('production') ? 'Server error' : $e->getMessage()
-            ], 422);
+            return $this->handleException($e, 'Failed to delete contact', 422);
         }
     }
 }

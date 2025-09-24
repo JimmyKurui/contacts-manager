@@ -3,24 +3,29 @@
 namespace App\Http\Controllers\Group;
 
 use App\Http\Controllers\Controller;
-use Illuminate\Http\Request;
 use App\Services\GroupService;
 use App\Http\Requests\Group\GroupStoreRequest;
 use App\Http\Requests\Group\GroupUpdateRequest;
+use App\Traits\ErrorResponseTrait;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Inertia\Inertia;
+use Inertia\Response;
 
 use Illuminate\Http\JsonResponse;
 
 class GroupController extends Controller
 {
+    use ErrorResponseTrait;
+
     public function __construct(private GroupService $groupService) {}
     /**
      * Display a listing of the resource.
      */
-    public function index(Request $request)
+    public function index(Request $request): Response
     {
-    $groups = $this->groupService->getGroupsForUser($request->user()->id);
-        return response()->json([
+        $groups = $this->groupService->getGroupsForUser($request->user()->id);
+        return Inertia::render('Groups/Index', [
             'groups' => $groups->toResourceCollection(),
         ]);
     }
@@ -31,7 +36,6 @@ class GroupController extends Controller
      */
     public function create()
     {
-        return response()->json(['message' => 'Show group creation form']);
     }
 
 
@@ -52,10 +56,7 @@ class GroupController extends Controller
             ], 201);
         } catch (\Exception $e) {
             DB::rollBack();
-            return response()->json([
-                'message' => 'Failed to create group',
-                'error' => app()->environment('production') ? 'Server error' : $e->getMessage()
-            ], 422);
+            return $this->handleException($e, 'Failed to create group', 422);
         }
     }
 
@@ -65,11 +66,12 @@ class GroupController extends Controller
      */
     public function show($id)
     {
-        $group = $this->groupService->getGroupById($id);
-        if ($group) {
+        try {
+            $group = $this->groupService->getGroupById($id);
             return response()->json(['group' => $group->toResource()]);
+        } catch (\Exception $e) {
+            return $this->handleException($e, 'Failed to fetch group');
         }
-        return response()->json(['message' => 'Group not found'], 404);
     }
 
 
@@ -78,11 +80,7 @@ class GroupController extends Controller
      */
     public function edit($id)
     {
-        $group = $this->groupService->getGroupById($id);
-        if ($group) {
-            return response()->json(['group' => $group->toResource()]);
-        }
-        return response()->json(['message' => 'Group not found'], 404);
+        
     }
 
 
@@ -95,19 +93,13 @@ class GroupController extends Controller
             DB::beginTransaction();
             $group = $this->groupService->updateGroup($id, $request->validated());
             DB::commit();
-            if ($group) {
-                return response()->json([
-                    'message' => 'Group updated successfully',
-                    'group' => $group->toResource()
-                ]);
-            }
-            return response()->json(['message' => 'Failed to update group'], 422);
+            return response()->json([
+                'message' => 'Group updated successfully',
+                'group' => $group->toResource()
+            ]);
         } catch (\Exception $e) {
             DB::rollBack();
-            return response()->json([
-                'message' => 'Failed to update group',
-                'error' => app()->environment('production') ? 'Server error' : $e->getMessage()
-            ], 422);
+            return $this->handleException($e, 'Failed to update group', 422);
         }
     }
 
@@ -120,16 +112,10 @@ class GroupController extends Controller
             DB::beginTransaction();
             $deleted = $this->groupService->deleteGroup($id);
             DB::commit();
-            if ($deleted) {
-                return response()->json(['message' => 'Group deleted successfully']);
-            }
-            return response()->json(['message' => 'Failed to delete group'], 422);
+            return response()->json(['message' => 'Group deleted successfully']);
         } catch (\Exception $e) {
             DB::rollBack();
-            return response()->json([
-                'message' => 'Failed to delete group',
-                'error' => app()->environment('production') ? 'Server error' : $e->getMessage()
-            ], 422);
+            return $this->handleException($e, 'Failed to delete group', 422);
         }
     }
 
@@ -147,10 +133,7 @@ class GroupController extends Controller
             ], 200);
         } catch (\Exception $e) {
             DB::rollBack();
-            return response()->json([
-                'message' => 'Failed to attach contact to group',
-                'error' => app()->environment('production') ? 'Server error' : $e->getMessage()
-            ], 422);
+            return $this->handleException($e, 'Failed to attach contact to group', 422);
         }
     }
 
@@ -168,10 +151,7 @@ class GroupController extends Controller
             ], 200);
         } catch (\Exception $e) {
             DB::rollBack();
-            return response()->json([
-                'message' => 'Failed to attach contact to group',
-                'error' => app()->environment('production') ? 'Server error' : $e->getMessage()
-            ], 422);
+            return $this->handleException($e, 'Failed to detach contact from group', 422);
         }
     }
 }
