@@ -3,9 +3,10 @@ import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import PrimaryButton from '@/Components/PrimaryButton.vue';
 import SecondaryButton from '@/Components/SecondaryButton.vue';
 import Create from './Create.vue';
-import { Head, Link, ref } from '@inertiajs/vue3';
-import api from '@/api.js';
+import Edit from './Edit.vue';
+import { Head, Link, router } from '@inertiajs/vue3';
 import { ref } from 'vue';
+import api from '@/api.js';
 
 const props = defineProps({
   contacts: {
@@ -16,15 +17,32 @@ const props = defineProps({
 });
 
 const refetchContacts = () => {
-  router.reload({ only: ['contacts'] });
+  router.reload({ only: ['contacts']});
 };
 
 const showCreateModal = ref(false);
-const onCreateModalClose = (success) => {
+const showEditModal = ref(false);
+const selectedContact = ref(null);
+
+const onCreateModalClose = () => {
   showCreateModal.value = false;
-  if (success === true) {
-    refetchContacts();
-  }
+};
+
+const openCreateModal = () => {
+  showEditModal.value = false;
+  selectedContact.value = null;
+  showCreateModal.value = true;
+};
+
+const openEditModal = (contact) => {
+  showCreateModal.value = false;
+  selectedContact.value = contact;
+  showEditModal.value = true;
+};
+
+const onEditModalClose = () => {
+  showEditModal.value = false;
+  selectedContact.value = null;
 };
 
 const handleDelete = async (id) => {
@@ -52,8 +70,9 @@ const handleDelete = async (id) => {
     <div class="p-6 bg-white rounded-lg shadow overflow-x-auto">
       <div class="flex items-center justify-between mb-4">
         <div class="flex items-center gap-2">
-          <Create :show="showCreateModal" @close="onCreateModalClose(success=true)" />
-          <PrimaryButton @click="showCreateModal = true">Add Contact</PrimaryButton>
+          <Create :show="showCreateModal" @close="onCreateModalClose" @created="refetchContacts" />
+          <Edit :show="showEditModal" :contact="selectedContact" @close="onEditModalClose" @updated="refetchContacts" />
+          <PrimaryButton @click="openCreateModal">Add Contact</PrimaryButton>
           <PrimaryButton>Bulk Delete</PrimaryButton>
         </div>
         <div>
@@ -86,8 +105,8 @@ const handleDelete = async (id) => {
             <td colspan="2" class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 flex flex-wrap gap-1">
               <Link :href="route('contacts.show', contact.id)"
                 class="px-2 py-1 bg-green-500 text-white rounded hover:bg-green-600 mr-1">View</Link>
-              <Link :href="route('contacts.edit', contact.id)"
-                class="px-2 py-1 bg-yellow-500 text-white rounded hover:bg-yellow-600 mr-1">Edit</Link>
+              <button class="px-2 py-1 bg-yellow-500 text-white rounded hover:bg-yellow-600 mr-1"
+                @click="openEditModal(contact)">Edit</button>
               <button class="px-2 py-1 bg-red-500 text-white rounded hover:bg-red-600"
                 @click="handleDelete(contact.id)">Delete</button>
             </td>
