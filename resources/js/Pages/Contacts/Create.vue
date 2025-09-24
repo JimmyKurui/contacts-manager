@@ -56,7 +56,7 @@ const submit = async () => {
   if (Object.keys(errors.value).length) return;
   loading.value = true;
   try {
-    await api.post('/contacts', contact.value);
+    await api.post(route('contacts.store'), contact.value);
     success.value = 'Contact created successfully!';
     setTimeout(() => {
       closeModal();

@@ -48,7 +48,7 @@ const submit = async () => {
     if (Object.keys(errors.value).length) return;
     loading.value = true;
     try {
-        await api.patch(`/contacts/${contact.value.id}`, contact.value);
+        await api.patch(route('contacts.update', contact.value.id), contact.value);
         success.value = 'Contact updated successfully!';
         emit('updated', contact.value);
         setTimeout(() => {

@@ -118,7 +118,7 @@ const attachContactToGroup = async (groupId, contactId) => {
 const addGroup = async(data) => {
   try {
     const res = await api.post(route('groups.store'), data);
-    return res.data;
+    return res.data.group;
   } catch(e) {
     console.log('Failed to add group', e);
   }
@@ -130,12 +130,12 @@ const handleAddGroup = async ({groupName, exists}) => {
     let group = {}
     if (!exists) {
       const data = { name: groupName };
-      group = addGroup(data);
+      group = await addGroup(data);
       props.groups.data.some(g => g.id === group.id) || props.groups.data.push(group);
     } else {
       group = props.groups.data.find(g => g.name.toLowerCase() === groupName.toLowerCase());
     }
-    attachContactToGroup(group.id, groupModalContact.value.id);
+    await attachContactToGroup(group.id, groupModalContact.value.id);
     groupModalContactGroups.value.some(g => g.id === group.id) || groupModalContactGroups.value.push(group);
   } catch (e) {
     console.log('Failed to handle group add', e)
@@ -161,12 +161,12 @@ const refetchContacts = () => {
 const handleDeleteConfirmed = async () => {
   if (!contactToDelete.value) return;
   try {
-    await api.delete(`/contacts/${contactToDelete.value.id}`);
+    await api.delete(route('contacts.destroy', contactToDelete.value.id));
     // alert component for successs
     refetchContacts();
   } catch (error) {
     // *alert component for error
-    alert('Failed to delete contact.');
+    console.log('Failed to delete contact.');
   } finally {
     showConfirmModal.value = false;
     contactToDelete.value = null;
