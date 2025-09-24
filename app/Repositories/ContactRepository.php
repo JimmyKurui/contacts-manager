@@ -6,30 +6,27 @@ use App\Repositories\Interfaces\ContactRepositoryInterface;
 use App\Models\Contact;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
-use \Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\Log;
 use Exception;
 
 
 class ContactRepository implements ContactRepositoryInterface
 {
-    public function getAllContacts()
+    protected int $defaultPerPage;
+
+    public function __construct()
     {
-        try {
-            return Contact::with(['groups:id,name,color'])->withCount(['interactions']);
-        } catch (Exception $e) {
-            Log::error('Failed to get all contacts: ' . $e->getMessage());
-            throw $e;
-        }
+        $this->defaultPerPage = config('constants.per_page', 5);
     }
 
-    public function getFilteredContacts(int $userId, array $filters, int $perPage = 15): LengthAwarePaginator
+
+    public function getFilteredContacts(int $userId, array $filters, ?int $perPage = null): LengthAwarePaginator
     {
+        $perPage = $perPage ?? $this->defaultPerPage;
         try {
             $query = Contact::query()->byUser($userId)
-                ->with(['groups:id,name,color'])
-                ->withCount(['interactions']);
-                
+                ->with(['groups:id,name,color']);
+
             $this->applyFilters($query, $filters);
             $this->applySorting($query, $filters);
             return $query->paginate($perPage);
@@ -39,20 +36,10 @@ class ContactRepository implements ContactRepositoryInterface
         }
     }
 
-    public function getAllContactsForUser(int $userId): ?Collection
-    {
-        try {
-            return Contact::byUser($userId)->with(['groups', 'interactions'])->get();
-        } catch (Exception $e) {
-            Log::error('Failed to get contacts for user ' . $userId . ': ' . $e->getMessage());
-            throw $e;
-        }
-    }
-
     public function getContactById(int $contactId): Contact
     {
         try {
-            return Contact::with(['groups', 'interactions'])->findOrFail($contactId);
+            return Contact::with(['groups:id,name,color',])->findOrFail($contactId);
         } catch (Exception $e) {
             Log::error('Failed to get contact by ID ' . $contactId . ': ' . $e->getMessage());
             throw $e;
@@ -75,8 +62,10 @@ class ContactRepository implements ContactRepositoryInterface
     {
         try {
             $contact = Contact::findOrFail($contactId);
-            $contact->update($newDetails);
-            return $contact;
+            if (!$contact->update($newDetails)) {
+                throw new Exception('Failed to update contact with ID ' . $contactId);
+            } 
+            return $contact->fresh();
         } catch (Exception $e) {
             Log::error('Failed to update contact ' . $contactId . ': ' . $e->getMessage());
             throw $e;
@@ -87,7 +76,10 @@ class ContactRepository implements ContactRepositoryInterface
     {
         try {
             $contact = Contact::findOrFail($contactId);
-            return (bool) $contact->delete();
+            if(!$contact->delete()) {
+                throw new Exception('Failed to delete contact with ID ' . $contactId);
+            }
+            return true;
         } catch (Exception $e) {
             Log::error('Failed to delete contact ' . $contactId . ': ' . $e->getMessage());
             throw $e;
@@ -124,7 +116,7 @@ class ContactRepository implements ContactRepositoryInterface
     }
 
     // -----------------------------------------------------------------------
-     private function applyFilters(Builder $query, array $filters): void
+    private function applyFilters(Builder $query, array $filters): void
     {
         if (!empty($filters['search'])) {
             $query->search($filters['search']);
@@ -143,15 +135,15 @@ class ContactRepository implements ContactRepositoryInterface
         switch ($sortField) {
             case 'name':
                 $query->orderBy('first_name', $sortDirection)
-                      ->orderBy('last_name', $sortDirection);
+                    ->orderBy('last_name', $sortDirection);
                 break;
             case 'company':
                 $query->orderBy('company', $sortDirection)
-                      ->orderBy('first_name', 'asc');
+                    ->orderBy('first_name', 'asc');
                 break;
             case 'last_contacted_at':
                 $query->orderBy('last_contacted_at', $sortDirection)
-                      ->orderBy('created_at', 'desc');
+                    ->orderBy('created_at', 'desc');
                 break;
             default:
                 $query->orderBy($sortField, $sortDirection);

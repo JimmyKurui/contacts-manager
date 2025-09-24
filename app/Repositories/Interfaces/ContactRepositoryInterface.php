@@ -8,7 +8,6 @@ use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 
 interface ContactRepositoryInterface
 {
-    public function getAllContacts();
     public function getFilteredContacts(int $userId, array $filters, int $perPage): LengthAwarePaginator;
     public function getContactById(int $contactId): Contact;
     public function createContact(array $data): Contact;

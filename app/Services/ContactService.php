@@ -15,25 +15,29 @@ class ContactService
     {
     }
 
-    public function getContacts(int $userId, array $filters, int $perPage = 15): LengthAwarePaginator
+    public function getContacts(int $userId, array $filters, $perPage = null): LengthAwarePaginator
     {
         $contacts = $this->contactRepository->getFilteredContacts($userId, $filters, $perPage);
         return $contacts;
     }
 
-    public function createContact(array $data, int $userId): Contact
+    public function createContact(array $data): Contact
     {
-        $data['user_id'] ??= $userId;
         $contact = $this->contactRepository->createContact($data);
         array_key_exists('group_ids', $data) && $data['group_ids'] && $this->contactRepository->attachGroups($contact->id, $data['group_ids']);
         return $contact->fresh();
     }
 
-    public function updateContact(array $data): Contact
+    public function updateContact(int $contactId, array $data): Contact
     {
-        $contact = $this->contactRepository->updateContact($data['id'], $data);
+        $contact = $this->contactRepository->updateContact($contactId, $data);
         $data['group_ids'] && $this->contactRepository->attachGroups($contact->id, $data['group_ids']);
-        return $contact->fresh();
+        return $contact;
+    }
+
+    public function deleteContact(int $contactId): bool
+    {
+        return $this->contactRepository->deleteContact($contactId);
     }
 
 }

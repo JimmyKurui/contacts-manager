@@ -69,7 +69,7 @@ class Contact extends Model
     {
         // Automatically assign to default group when creating a contact
         static::created(function (Contact $contact) {
-            $defaultGroup = Group::where('user_id', $contact->user_id)->where('is_default', true)->first();
+            $defaultGroup = Group::byUser($contact->user_id)->where('is_default', true)->first();
 
             if ($defaultGroup) {
                 $contact->groups()->attach($defaultGroup->id, [

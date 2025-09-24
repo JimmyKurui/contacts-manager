@@ -5,9 +5,9 @@ namespace App\Http\Controllers\Contact;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreContactRequest;
 use App\Http\Requests\UpdateContactRequest;
-use App\Http\Resources\ContactResource;
 use App\Models\Contact;
 use App\Services\ContactService;
+use App\Services\GroupService;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\DB;
@@ -16,7 +16,7 @@ use Inertia\Response;
 
 class ContactController extends Controller
 {
-    public function __construct(protected ContactService $contactService)
+    public function __construct(protected ContactService $contactService, protected GroupService $groupService)
     {
         // $this->authorizeResource(Contact::class, 'contact');
     }
@@ -36,10 +36,12 @@ class ContactController extends Controller
         $contacts = $this->contactService->getContacts(
             auth()->id(),
             $filters,
-            $filters['per_page'] ?? 15
+            $filters['per_page'] ?? null
         );
+        $groups = $this->groupService->getGroupsForUser(auth()->id());
         return Inertia::render('Contacts/Index', [
-            'contacts' => ContactResource::collection($contacts),
+            'contacts' => $contacts,
+            'groups' => $groups->toResourceCollection(),
         ]);
     }
 
@@ -48,8 +50,9 @@ class ContactController extends Controller
      */
     public function create(): Response
     {
+        $groups = $this->groupService->getGroupsForUser(auth()->id());
         return Inertia::render('Contacts/Create', [
-            'groups' => auth()->user()->contactGroups()->select('id', 'name', 'color')->get(),
+            'groups' => $groups->toResourceCollection()
         ]);
     }
 
@@ -60,16 +63,18 @@ class ContactController extends Controller
     {
         try {
             DB::beginTransaction();
-            $contact = $this->contactService->createContact($request->validated(), auth()->id());
+            $data = $request->validated();
+            $data['user_id'] ??= auth()->id();
+            $contact = $this->contactService->createContact($data);
             DB::commit();
             return response()->json([
                 'message' => 'Contact created successfully',
-                'contact' => $contact
+                'contact' => $contact->toResource()
             ], 201);
 
         } catch (\Exception $e) {
             DB::rollBack();
-            
+
             return response()->json([
                 'message' => 'Failed to create contact',
                 'error' => app()->environment('production') ? 'Server error' : $e->getMessage()
@@ -82,7 +87,9 @@ class ContactController extends Controller
      */
     public function show(Contact $contact)
     {
-        return Inertia::render('Contacts/Show', compact('contact'));
+        return Inertia::render('Contacts/Show', [
+            'contact' => $contact->toResource()
+        ]);
     }
 
     /**
@@ -90,7 +97,9 @@ class ContactController extends Controller
      */
     public function edit(Contact $contact)
     {
-        return Inertia::render('Contacts/Edit', compact('contact'));
+        return Inertia::render('Contacts/Edit', [
+            'contact' => $contact->toResource()
+        ]);
     }
 
     /**
@@ -100,13 +109,12 @@ class ContactController extends Controller
     {
         try {
             DB::beginTransaction();
-            $updated = $contact->update($request->validated());
-
-            if (!$updated) {
-                throw new \Exception('Failed to update contact in database');
-            }
+            $updatedContact = $this->contactService->updateContact($contact->id, $request->validated());
             DB::commit();
-            return response()->json(['message' => 'Contact updated successfully', 'contact' => $contact], 200);
+            return response()->json([
+                'message' => 'Contact updated successfully', 
+                'contact' => $updatedContact->toResource()
+            ], 200);
         } catch (\Exception $e) {
             DB::rollBack();
 
@@ -122,7 +130,18 @@ class ContactController extends Controller
      */
     public function destroy(Contact $contact)
     {
-        $contact->delete();
-        return response()->json(['message' => 'Contact deleted successfully'], 200);
+        try {
+            DB::beginTransaction();
+            $this->contactService->deleteContact($contact->id);
+            DB::commit();
+            return response()->json(['message' => 'Contact deleted successfully'], 200);
+        } catch (\Exception $e) {
+            DB::rollBack();
+
+            return response()->json([
+                'message' => 'Failed to delete contact',
+                'error' => app()->environment('production') ? 'Server error' : $e->getMessage()
+            ], 422);
+        }
     }
 }
