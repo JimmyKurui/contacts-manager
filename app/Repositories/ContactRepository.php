@@ -59,13 +59,10 @@ class ContactRepository implements ContactRepositoryInterface
         }
     }
 
-    public function createContact(array $contactDetails, array $groupIds = []): Contact
+    public function createContact(array $contactDetails): Contact
     {
         try {
             $contact = Contact::create($contactDetails);
-            if (!empty($groupIds)) {
-                $contact->addToGroups($groupIds);
-            }
             return $contact;
         } catch (Exception $e) {
             Log::error('Failed to create contact: ' . $e->getMessage());
@@ -74,14 +71,11 @@ class ContactRepository implements ContactRepositoryInterface
     }
 
 
-    public function updateContact(int $contactId, array $newDetails, array $groupIds = []): Contact
+    public function updateContact(int $contactId, array $newDetails): Contact
     {
         try {
             $contact = Contact::findOrFail($contactId);
             $contact->update($newDetails);
-            if (!empty($groupIds)) {
-                $contact->groups()->sync($groupIds);
-            }
             return $contact;
         } catch (Exception $e) {
             Log::error('Failed to update contact ' . $contactId . ': ' . $e->getMessage());

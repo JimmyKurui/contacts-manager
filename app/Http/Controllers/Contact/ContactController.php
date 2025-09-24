@@ -10,6 +10,7 @@ use App\Models\Contact;
 use App\Services\ContactService;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -25,7 +26,7 @@ class ContactController extends Controller
      */
     public function index(Request $request): Response
     {
-         $filters = $request->validate([
+        $filters = $request->validate([
             'search' => 'nullable|string|max:255',
             'company' => 'nullable|string|max:255',
             'sort' => 'nullable|in:name,company,created_at',
@@ -57,12 +58,23 @@ class ContactController extends Controller
      */
     public function store(StoreContactRequest $request): JsonResponse
     {
-        $contact = auth()->user()
-                    ->contacts()->create($request->validated());
-        return response()->json([
-            'message' => 'Contact created successfully', 
-            'contact' => $contact
-        ], 201);
+        try {
+            DB::beginTransaction();
+            $contact = $this->contactService->createContact($request->validated(), auth()->id());
+            DB::commit();
+            return response()->json([
+                'message' => 'Contact created successfully',
+                'contact' => $contact
+            ], 201);
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            
+            return response()->json([
+                'message' => 'Failed to create contact',
+                'error' => app()->environment('production') ? 'Server error' : $e->getMessage()
+            ], 422);
+        }
     }
 
     /**
@@ -84,10 +96,25 @@ class ContactController extends Controller
     /**
      * Update the specified resource in storage.
      */
-    public function update(UpdateContactRequest $request, Contact $contact)
+    public function update(UpdateContactRequest $request, Contact $contact): JsonResponse
     {
-        $contact->update($request->validated());
-        return response()->json(['message' => 'Contact updated successfully', 'contact' => $contact], 200);
+        try {
+            DB::beginTransaction();
+            $updated = $contact->update($request->validated());
+
+            if (!$updated) {
+                throw new \Exception('Failed to update contact in database');
+            }
+            DB::commit();
+            return response()->json(['message' => 'Contact updated successfully', 'contact' => $contact], 200);
+        } catch (\Exception $e) {
+            DB::rollBack();
+
+            return response()->json([
+                'message' => 'Failed to update contact',
+                'error' => app()->environment('production') ? 'Server error' : $e->getMessage()
+            ], 422);
+        }
     }
 
     /**
