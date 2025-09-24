@@ -3,6 +3,8 @@ import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import PrimaryButton from '@/Components/PrimaryButton.vue';
 import SecondaryButton from '@/Components/SecondaryButton.vue';
 import ConfirmModal from '@/Components/ConfirmModal.vue';
+import CreateGroupModal from './Partials/CreateFormModal.vue';
+import EditGroupModal from './Partials/EditFormModal.vue';
 import { Head } from '@inertiajs/vue3';
 import { ref } from 'vue';
 import api from '@/api.js'
@@ -16,6 +18,7 @@ const props = defineProps({
 });
 
 const showCreateModal = ref(false);
+const showEditModal = ref(false);
 const selectedGroup = ref(null);
 const showConfirmDeleteModal = ref(false);
 const groupToDelete = ref(null);
@@ -26,8 +29,34 @@ const openCreateModal = () => {
 const onCreateModalClose = () => {
   showCreateModal.value = false;
 };
+const handleCreateGroup = async (data) => {
+  try {
+    const res = await api.post(route('groups.store'), data);
+    props.groups.data.push(res.data.group);
+    showCreateModal.value = false;
+  } catch (e) {
+    alert('Failed to create group');
+  }
+};
+
 const openEditModal = (group) => {
   selectedGroup.value = group;
+  showEditModal.value = true;
+};
+const onEditModalClose = () => {
+  showEditModal.value = false;
+  selectedGroup.value = null;
+};
+const handleUpdateGroup = async (data) => {
+  try {
+    const res = await api.put(route('groups.update', data.id), data);
+    const idx = props.groups.data.findIndex(g => g.id === data.id);
+    if (idx !== -1) props.groups.data[idx] = res.data.group;
+    showEditModal.value = false;
+    selectedGroup.value = null;
+  } catch (e) {
+    alert('Failed to update group');
+  }
 };
 const handleDelete = (group) => {
   groupToDelete.value = group;
@@ -67,7 +96,7 @@ function getRandomIcon(groupId) {
       <div class="flex items-center justify-between mb-4">
         <div class="flex items-center gap-2">
           <PrimaryButton @click="openCreateModal">Add Group</PrimaryButton>
-          <PrimaryButton>Bulk Delete</PrimaryButton>
+          <PrimaryButton>Bulk Assign Contacts</PrimaryButton>
         </div>
         <div>
           <SecondaryButton>Import</SecondaryButton>
@@ -90,9 +119,18 @@ function getRandomIcon(groupId) {
           </div>
           <!-- Body -->
           <div class="flex-1 px-3 py-2 flex flex-col justify-between py-4" style="height: 40%;">
-            <div class="text-sm text-gray-700 mb-1 text-center">{{ group.description || 'No description' }}</div>
+            <div
+                class="text-sm text-gray-700 mb-1 text-center overflow-hidden"
+                :title="group.description"
+            >
+                {{
+                    group.description && group.description.length > 80
+                        ? group.description.slice(0, 77) + '...'
+                        : (group.description || 'No description')
+                }}
+            </div>
             <div class="flex items-center justify-center text-xs text-gray-500 mt-3">
-              <span>Contacts: <span class="font-semibold">{{ group.contacts.length ?? 0 }}</span></span>
+              <span><strong>Contacts: <span class="font-semibold">{{ group.contacts.length ?? 0 }}</span></strong></span>
             </div>
         </div>
             <div class="flex gap-2 justify-center mt-1">
@@ -102,6 +140,17 @@ function getRandomIcon(groupId) {
         </div>
       </div>
 
+      <CreateGroupModal
+        :show="showCreateModal"
+        @close="onCreateModalClose"
+        @create="handleCreateGroup"
+      />
+      <EditGroupModal
+        :show="showEditModal"
+        :group="selectedGroup"
+        @close="onEditModalClose"
+        @update="handleUpdateGroup"
+      />
       <ConfirmModal
         :show="showConfirmDeleteModal"
         :title="'Delete Group'"
