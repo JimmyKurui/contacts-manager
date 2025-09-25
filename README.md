@@ -2,14 +2,9 @@
 Web application to manage your personal contacts with basic CRUD functionality with additional features like grouping and others
 
 
-Here is the README in markdown format for you to copy:
-
-````markdown
-# Project README
-
 ## Introduction
 
-Welcome to the Laravel 12 + Vue.js + Inertia.js project! This README will guide you through the necessary steps to set up the project on your local environment, explain essential dependencies, and provide basic usage instructions.
+This application uses Laravel 12 + Laravel Breeze (Vue.js 3 + Inertia).This guide shows the necessary steps to set up the project on your local environment, GitHub Codespace and, explains essential dependencies and basic usage. Check the [User Manual](https://github.com/JimmyKurui/contacts-manager/docs/User_Manual_Contacts_Manager.pdf)
 
 ---
 
@@ -39,7 +34,7 @@ To run this project locally, make sure you have the following software installed
 
 - **PHP** >= 8.2 except 8.3
 - **Composer** >= 2.x
-- **Node.js** >= 18.x
+- **Node.js** >= 20.x
 - **npm** >= 8.x
 - **MySQL** >= 5.7
 
@@ -54,7 +49,7 @@ First, clone the repository to your local machine:
 ```bash
 git clone https://github.com/JimmyKurui/contacts-manager.git
 cd contacts-manager
-````
+```
 
 ### Install Dependencies
 
@@ -63,8 +58,10 @@ cd contacts-manager
 Install the PHP dependencies using Composer:
 
 ```bash
-composer install
+composer update && composer install
 ```
+
+Note: If any extensions or composer require commands are required, run them, then re-run the above command. 
 
 #### 2. Frontend (Vue.js & Inertia.js)
 
@@ -131,13 +128,12 @@ This will start the development server for Vue.js at `http://localhost:5173`.
 
 ### Use in GitHub Codespace
 
-If you are using a GitHub Codespace for development, you can run the Vue.js development server with the following command instead:
+If you are using a GitHub Codespace for development, set up your dev container using .devcontainer settings. Your environment must have these settings:
 
-```bash
-npm run watch
-```
+- Vite frontend server port is public
+- Your APP_URL points to your codespace URL
+- Laravel proxies: trust proxies in the middleware for your Vite server
 
-This will start the Vue.js application in "watch mode", automatically rebuilding assets on changes.
 
 ---
 
@@ -158,7 +154,7 @@ To deploy the Laravel application, make sure to set the correct environment sett
 ```bash
 php artisan config:cache
 php artisan route:cache
-php artisan migrate --force
+php artisan migrate
 ```
 
 ---
@@ -191,6 +187,4 @@ We welcome contributions to the project! Please fork the repository, create a ne
 4. Push to the branch (`git push origin feature-name`)
 5. Submit a pull request
 
----
- 
- 
+--- 
