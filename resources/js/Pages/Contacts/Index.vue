@@ -24,16 +24,25 @@ const props = defineProps({
 });
 
 // =========================== START PAGINATION =========================
-const paginationMeta = computed(() => props.contacts.meta || {});
+const paginationMeta = computed(() => props.contacts || {});
 
-const perPageOptions = [10, 15, 25, 50, 100];
+const perPageOptions = [5, 10, 15, 25, 50, 100];
 const selectedPerPage = ref(paginationMeta.per_page || 5);
 
 function goToPage(page) {
   if (page && page !== paginationMeta.value.current_page) {
-    router.get(route('contacts.index'), { page }, { preserveState: true, preserveScroll: true });
+    router.get(route('contacts.index'), { page, per_page: selectedPerPage.value } , { preserveState: true, preserveScroll: true });
+    return
   }
+  router.get(route('contacts.index'), { page: 1, per_page: selectedPerPage.value } , { preserveState: true, preserveScroll: true });
 }
+
+const getPage = (newParams) => {
+  const currentParams = { ...page.props.ziggy.query }
+  const params = { ...currentParams, ...newParams }
+  router.get(route('contacts.index'), { params }, { preserveState: true, preserveScroll: true });
+}
+
 const getPageLinks = computed(() => {
   const meta = paginationMeta.value;
   if (!meta.last_page) return [];
@@ -201,12 +210,12 @@ const handleDeleteConfirmed = async () => {
         <div class="flex items-center justify-between mb-2">
           <div class="flex items-center gap-2">
             <label for="perPage" class="text-sm font-medium">Records per page:</label>
-            <select id="perPage" v-model="selectedPerPage" class="border rounded px-2 py-1 text-sm">
+            <select id="perPage" v-model="selectedPerPage" class="border rounded px-2 py-1 text-sm" @change="goToPage(1)">
               <option v-for="option in perPageOptions" :key="option" :value="option">{{ option }}</option>
             </select>
           </div>
           <div class="text-sm text-gray-500">
-            Showing {{ props.contacts.meta?.from || 0 }} - {{ props.contacts.meta?.to || 0 }} of {{ props.contacts.meta?.total || 0 }} contacts
+            Showing {{ paginationMeta.from || 0 }} - {{ paginationMeta.to || 0 }} of {{ paginationMeta.total || 0 }} contacts
           </div>
         </div>
       <table class="min-w-full divide-y divide-gray-200" style="min-width: 900px;">
@@ -225,10 +234,11 @@ const handleDeleteConfirmed = async () => {
         </thead>
         <tbody class="bg-white divide-y divide-gray-200">
           <tr v-for="contact in contacts.data" :key="contact.id">
-            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ contact.first_name + contact.last_name }}
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ contact.first_name }} {{ contact.last_name }}
             </td>
             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ contact.email }}</td>
-            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ contact.work_phone }}</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ contact.mobile_phone }}</td>
+            <!-- <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ contact.work_phone }}</td> -->
             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ contact.address }}</td>
             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ contact.company }}</td>
             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ contact.job_title }}</td>

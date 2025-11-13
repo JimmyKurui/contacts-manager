@@ -39,11 +39,12 @@ class ContactController extends Controller
     public function index(Request $request): Response
     {
         $filters = $request->validate([
+            'page' => 'nullable|integer',
+            'per_page' => 'nullable|integer|min:5|max:100',
             'search' => 'nullable|string|max:255',
             'company' => 'nullable|string|max:255',
             'sort' => 'nullable|in:name,company,created_at',
             'direction' => 'nullable|in:asc,desc',
-            'per_page' => 'nullable|integer|min:10|max:100',
         ]);
         $contactsCacheKey = $this->contactsCacheTag . ':filters:' . md5(json_encode($filters));
         $contacts = Cache::tags([$this->contactsCacheTag])->remember($contactsCacheKey, now()->addMinutes(5), function () use ($filters) {
