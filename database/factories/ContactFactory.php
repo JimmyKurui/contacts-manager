@@ -20,19 +20,20 @@ class ContactFactory extends Factory
      */
     public function definition(): array
     {
-        $dob = $this->faker->optional(0.4)->dateTimeBetween('-80 years', '-18 years');
+        $dob = $this->faker->optional(0.4)->dateTimeBetween('-50 years', '-18 years');
         return [
             'user_id' => User::factory(),
-            'first_name' => $this->faker->firstName(),
-            'last_name' => $this->faker->lastName(),
-            'email' => $this->faker->unique()->safeEmail(),
+            'first_name' => $firstName = $this->faker->firstName(),
+            'last_name' => $lastName = $this->faker->lastName(),
+            'email' => strtolower("{$firstName}.{$lastName}@example.com"),
             'mobile_phone' => $this->faker->phoneNumber(),
-            'company' => $this->faker->optional(0.7)->company(),
-            'job_title' => $this->faker->optional(0.6)->jobTitle(),
+            'work_phone' => $this->faker->optional(0.5)->phoneNumber(),
+            'company' => $company = $this->faker->optional(0.7)->company(),
+            'job_title' => $company ? $this->faker->jobTitle() : null,
             'address' => $this->faker->optional(0.5)->streetAddress(),
-            'city' => $this->faker->optional(0.6)->city(),
-            'state' => $this->faker->optional(0.6)->state(),
-            'country' => $this->faker->optional(0.7)->country(),
+            'city' => $this->faker->city(),
+            'state' => $this->faker->state(),
+            'country' => $this->faker->country(),
             'postal_code' => $this->faker->optional(0.5)->postcode(),
             'date_of_birth' => $dob ? $dob->format('Y-m-d') : null,
             'notes' => $this->faker->optional(0.3)->paragraph(),

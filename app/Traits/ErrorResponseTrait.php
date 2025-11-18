@@ -15,7 +15,7 @@ trait ErrorResponseTrait
 
         return response()->json([
             'message' => $message,
-            'error' => app()->environment('production') || config('app.debug') ? 'Server error' : $e->getMessage()
+            'error' => app()->environment('production') ? 'Server error' : $e->getMessage()
         ], $status);
     }
 }

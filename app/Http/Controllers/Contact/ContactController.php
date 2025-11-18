@@ -4,8 +4,9 @@ namespace App\Http\Controllers\Contact;
 
 use App\Http\Controllers\Controller;
 use App\Http\Controllers\Group\GroupController;
-use App\Http\Requests\StoreContactRequest;
-use App\Http\Requests\UpdateContactRequest;
+use App\Http\Requests\ContactStoreRequest;
+use App\Http\Requests\ContactUpdateRequest;
+use App\Http\Requests\ContactIndexRequest;
 use App\Models\Contact;
 use App\Services\ContactService;
 use App\Services\GroupService;
@@ -36,16 +37,9 @@ class ContactController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index(Request $request): Response
+    public function index(ContactIndexRequest $request): Response
     {
-        $filters = $request->validate([
-            'page' => 'nullable|integer',
-            'per_page' => 'nullable|integer|min:5|max:100',
-            'search' => 'nullable|string|max:255',
-            'company' => 'nullable|string|max:255',
-            'sort' => 'nullable|in:name,company,created_at',
-            'direction' => 'nullable|in:asc,desc',
-        ]);
+        $filters = $request->validated();
         $contactsCacheKey = $this->contactsCacheTag . ':filters:' . md5(json_encode($filters));
         $contacts = Cache::tags([$this->contactsCacheTag])->remember($contactsCacheKey, now()->addMinutes(5), function () use ($filters) {
             return $this->contactService->getContacts(
