@@ -15,9 +15,9 @@ class ContactService
     {
     }
 
-    public function getContacts(int $userId, array $filters, $perPage = null): LengthAwarePaginator
+    public function getContacts(int $userId, array $params, $perPage = null): LengthAwarePaginator
     {
-        $contacts = $this->contactRepository->getFilteredContacts($userId, $filters, $perPage);
+        $contacts = $this->contactRepository->getFilteredContacts($userId, $params, $perPage);
         return $contacts;
     }
 

@@ -3,6 +3,7 @@
 namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class ContactIndexRequest extends FormRequest
 {
@@ -26,8 +27,8 @@ class ContactIndexRequest extends FormRequest
             'per_page' => 'nullable|integer|min:5|max:100',
             'q' => 'nullable|string|max:50',
             'company' => 'nullable|string|max:255',
-            'sort' => 'nullable|in:name,company,created_at',
-            'direction' => 'nullable|in:asc,desc',
+            'sort' => ['nullable', Rule::in(\App\Models\Contact::getSortableFields())],
+            'order' => 'nullable|in:asc,desc',
         ];
     }
 }

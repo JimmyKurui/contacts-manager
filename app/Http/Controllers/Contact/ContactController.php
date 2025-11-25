@@ -39,13 +39,13 @@ class ContactController extends Controller
      */
     public function index(ContactIndexRequest $request): Response
     {
-        $filters = $request->validated();
-        $contactsCacheKey = $this->contactsCacheTag . ':filters:' . md5(json_encode($filters));
-        $contacts = Cache::tags([$this->contactsCacheTag])->remember($contactsCacheKey, now()->addMinutes(5), function () use ($filters) {
+        $queryParams = $request->validated();
+        $contactsCacheKey = $this->contactsCacheTag . ':filters:' . md5(json_encode($queryParams));
+        $contacts = Cache::tags([$this->contactsCacheTag])->remember($contactsCacheKey, now()->addMinutes(5), function () use ($queryParams) {
             return $this->contactService->getContacts(
                 auth()->id(),
-                $filters,
-                $filters['per_page'] ?? null
+                $queryParams,
+                $queryParams['per_page'] ?? null
             );
         });
 
