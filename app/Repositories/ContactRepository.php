@@ -20,15 +20,16 @@ class ContactRepository implements ContactRepositoryInterface
     }
 
 
-    public function getFilteredContacts(int $userId, array $filters, ?int $perPage = null): LengthAwarePaginator
+    public function getFilteredContacts(int $userId, array $params, ?int $perPage = null): LengthAwarePaginator
     {
         $perPage = $perPage ?? $this->defaultPerPage;
         try {
-            $query = Contact::query()->byUser($userId)
-                ->with(["groups:id,name,color"]);
+            $query = Contact::parametize($params)->byUser($userId)
+                ->with(["groups:id,name,color"])
+                ->orderBy('first_name', $params['order'] ?? 'asc')->orderBy('last_name', $params['order'] ?? 'asc');
 
-            $this->applyFilters($query, $filters);
-            $this->applySorting($query, $filters);
+            // $this->applyFilters($query, $filters);
+            // $this->applySorting($query, $filters);
             return $query->paginate($perPage);
         } catch (Exception $e) {
             Log::error("Failed to get filtered contacts: {$e->getMessage()}");
@@ -119,7 +120,7 @@ class ContactRepository implements ContactRepositoryInterface
     private function applyFilters(Builder $query, array $filters): void
     {
         if (!empty($filters["search"])) {
-            $query->search($filters["search"]);
+            $query->where($filters["search"]);
         }
 
         if (!empty($filters["company"])) {
@@ -130,24 +131,24 @@ class ContactRepository implements ContactRepositoryInterface
     private function applySorting(Builder $query, array $filters): void
     {
         $sortField = $filters["sort"] ?? "created_at";
-        $sortDirection = $filters["direction"] ?? "desc";
+        $sortDirection = $filters["order"] ?? "desc";
 
-        switch ($sortField) {
-            case "name":
-                $query->orderBy("first_name", $sortDirection)
-                    ->orderBy("last_name", $sortDirection);
-                break;
-            case "company":
-                $query->orderBy("company", $sortDirection)
-                    ->orderBy("first_name", "asc");
-                break;
-            case "last_contacted_at":
-                $query->orderBy("last_contacted_at", $sortDirection)
-                    ->orderBy("created_at", "desc");
-                break;
-            default:
-                $query->orderBy($sortField, $sortDirection);
-                break;
-        }
+        // switch ($sortField) {
+        //     case "name":
+        //         $query->orderBy("first_name", $sortDirection)
+        //             ->orderBy("last_name", $sortDirection);
+        //         break;
+        //     case "company":
+        //         $query->orderBy("company", $sortDirection)
+        //             ->orderBy("first_name", "asc");
+        //         break;
+        //     case "last_contacted_at":
+        //         $query->orderBy("last_contacted_at", $sortDirection)
+        //             ->orderBy("created_at", "desc");
+        //         break;
+        //     default:
+        $query->orderBy($sortField, $sortDirection);
+                // break;
+        // }
     }
 }
